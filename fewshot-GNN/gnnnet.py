@@ -74,8 +74,6 @@ class GnnNet(MetaTemplate):
 
 class GnnNetLRP(GnnNet):
   maml=False
-  maml_adain = False
-  assert (maml and maml_adain) == False
   def __init__(self, model_func, n_way, n_support, tf_path=None):
     super(GnnNetLRP, self).__init__(model_func, n_way, n_support, tf_path=tf_path)
     self.method = 'GnnNetLRP'
@@ -85,7 +83,6 @@ class GnnNetLRP(GnnNet):
       input_ = feature_input.clone().detach()
       Z = torch.mm(input_, V.t())
       if ignore_bias:
-        # TODO this seems to be not done in iNNvestigate if biases are not ignored.
         assert bias == None
         Z += LRPutil.EPSILON * Z.sign()  # Z.sign() returns -1 or 0 or 1
         Z.masked_fill_(Z == 0, LRPutil.EPSILON)
@@ -119,7 +116,6 @@ class GnnNetLRP(GnnNet):
 
   def explain_Gconv(self, relevance_output, Gconvlayer, Wi, feature_input):
     # one forward pass
-    # print('fea_in',feature_input.shape)  # (bs, N, num_features)
     feature_input = feature_input.clone().detach()
     Wi = Wi.clone().detach()
     W_size = Wi.size()
