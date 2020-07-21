@@ -11,10 +11,8 @@ class Model(nn.Module):
     def __init__(self, scale_cls, num_classes=64):
         super(Model, self).__init__()
         self.scale_cls = scale_cls
-
         self.base = resnet12()
         self.cam = CAM()
-
         self.nFeat = self.base.nFeat
         self.clasifier = nn.Conv2d(self.nFeat, num_classes, kernel_size=1) 
 
@@ -156,7 +154,7 @@ class ModelwithLRP(nn.Module):
         relevance_ftest = LRPutil.compute_lrp_mean(ftest_mean1, ftest_att, relevance_ftest_mean1, dim=-1)  #(b, n2, n1, c, h, w)
 
         relevance_ftest = LRPutil.normalize_relevance(relevance_ftest,dim=3)
-
+        # for the CAN model we only use the lrp weighted features to train.
         cls_scores = self.scale_cls * torch.sum(ftest_norm * ftrain_norm * relevance_ftest * relevance_weight.unsqueeze(-1).unsqueeze(-1), dim=3)
         cls_scores = cls_scores.view(batch_size * num_test, *cls_scores.size()[2:])
 
