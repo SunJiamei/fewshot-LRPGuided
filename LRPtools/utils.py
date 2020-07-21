@@ -11,7 +11,6 @@ Z_EPSILON = 1e-7
 LOGIT_BETA = 4
 
 def safe_divide(numerator, divisor):
-    # Save divide in iNNvestigate: a / (b + iK.to_floatx(K.equal(b, K.constant(0))) * K.epsilon())
     return numerator / (divisor + Z_EPSILON * (divisor == 0).float())
 
 
@@ -37,14 +36,10 @@ def project(X, output_range=(0, 1), absmax=None, input_is_postive_only=False):
 
 
 def normalize_relevance(X, dim=-1):
-    # X = torch.clamp(X, min=0)
 
     value, indice = torch.max(torch.abs(X), dim=dim)
     value.masked_fill_(value==0, 1)
-    # print(value)
-    # print(X.shape)
     X = X/value.unsqueeze(dim)
-    # X.masked_fill_(X==0, 1)
     return X + 1
 
 
@@ -67,7 +62,6 @@ def heatmap(X, cmap_type="seismic", reduce_op="sum", reduce_axis=-1, **kwargs):
                         [pos_max, neg_max])
     else:
         raise NotImplementedError()
-    # print(tmp.shape)
     tmp = project(tmp, output_range=(0, 255), **kwargs).astype(np.int64)
 
     tmp = cmap(tmp.flatten())[:, :3].T
@@ -103,10 +97,7 @@ def gamma(X, gamma = 0.5, minamp=0, maxamp=None):
     if not given determined from the given data.
     """
 
-    #prepare return array
-    # print(X.shape)
     Y = np.zeros_like(X)
-    # print(Y.shape)
 
     X = X - minamp # shift to given/assumed center
     if maxamp is None: maxamp = np.abs(X).max() #infer maxamp if not given
@@ -140,22 +131,12 @@ def visuallize_attention(image, attention, reshape_size, cmap_type="seismic",):
         return x
     attention = attention.view(reshape_size)
     attention = attention.cpu().detach().numpy()-1
-    # print(attention.shape)
     attention = project_inside(attention)
-    # print(attention)
     atn = skimage.transform.pyramid_expand(attention, upscale=14,
                                            multichannel=False)
-    # print(atn)
-    # plt.imshow(atn)
-    # plt.show()
     cm = plt.get_cmap('jet')
     atn_heatmap = cm(atn)
-    # print(atn_heatmap[:,:,0])
-    # plt.imshow(atn_heatmap[:,:,:3])
-    # plt.show()
-    # print(atn.shape)
     attention_heatmap = Image.fromarray(np.uint8(atn_heatmap[:, :, :3]*255))
-    # attention_heatmap.show()
     merged_heatmap = Image.blend(image, attention_heatmap, 0.5)
     return merged_heatmap
 
@@ -164,15 +145,9 @@ def visuallize_attention(image, attention, reshape_size, cmap_type="seismic",):
 
 def compute_lrp_sum(sum_output, sum_input, relevance_sum_output,dim=-1):
     #this function will return the relevance of the sum_input
-    # print(sum_output)
-    # print(torch.sum(sum_input,dim=dim))
-    # print(sum_output, torch.sum(sum_input, dim=dim))
     assert (sum_output == torch.sum(sum_input,dim=dim)).all()
     fea_dim = sum_input.size()[-1]
-    # print(relevance_sum_output.unsqueeze(-1).repeat(1,1,1,fea_dim).shape)
-    # print(sum_input.shape)
     relevance = relevance_sum_output.unsqueeze(-1).repeat(1,1,1,fea_dim)
-    # print(relevance)
     out = sum_output.unsqueeze(-1).repeat(1,1,1,fea_dim)
     mask = out == 0
     out.masked_fill_(mask, 1 / fea_dim)
@@ -186,11 +161,9 @@ def compute_lrp_mean(mean_output, mean_input, relevance_mean_output,dim=-1):
     input_dim = len(mean_input.shape)
     repeat_param = [1]*input_dim
     repeat_param[-1] *= fea_dim
-    # print(repeat_param)
     relevance = relevance_mean_output.unsqueeze(-1).repeat(repeat_param)
     out = mean_input.sum(dim=dim).unsqueeze(-1).repeat(repeat_param)
     mask = out == 0
-    # input = mean_input / fea_dim
     out.masked_fill_(mask, 1/fea_dim)
     relevance_mean_input = relevance * mean_input / (out + util.EPSILON * out.sign())
     return relevance_mean_input
